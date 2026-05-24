@@ -1,0 +1,7 @@
+{
+  "dkg_node_url": "http://127.0.0.1:9200",
+  "auth_token": "<your-dkg-auth-token-goes-here>",
+  "context_graph": "triad-research",
+  "collection": "your-collection",
+  "agent_name": "your-agent"
+}
