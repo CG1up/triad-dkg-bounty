@@ -21,7 +21,7 @@ info "Three agents, one knowledge graph. Zero gas."
 # ── Step 1: Node Status ────────────────────────────────────────────
 header "STEP 1: DKG Node Health"
 step "Checking triad-node..."
-curl -s http://127.0.0.1:9200/api/health 2>/dev/null | python3 -m json.tool || echo "  ⚠️  Node not running — start with: dkg openclaw setup"
+dkg status 2>/dev/null | head -6 || echo "  ⚠️  Node not running — start with: dkg openclaw setup"
 
 # ── Step 2: Cleo — URL Ingestion ───────────────────────────────────
 header "STEP 2: Cleo reads a URL from the queue"
@@ -35,7 +35,7 @@ python3 scripts/research-to-dkg.py \
   --verdict adopt \
   --context "Foundation research for multi-agent The Triad" \
   --json 2>/dev/null | python3 -c "
-import json,sys,d=json.load(sys.stdin)
+import json,sys; d=json.load(sys.stdin)
 print(f'  ✅ Cleo ingested: {d[\"ual\"]}')
 print(f'     Collection:    {d[\"collection\"]}')
 print(f'     Assertion:     {d[\"assertion\"]}')
@@ -43,17 +43,17 @@ print(f'     Assertion:     {d[\"assertion\"]}')
 
 # ── Step 3: Otto — Research Brief ──────────────────────────────────
 header "STEP 3: Otto researches and writes a brief"
-step "Otto reading Cleo's asset and writing a research brief..."
-CLEO_UAL=$(python3 scripts/query-triad.py --json 2>/dev/null | python3 -c "
+step "Otto reading prior assets and writing a research brief..."
+FIRST_UAL=$(python3 scripts/query-triad.py --json 2>/dev/null | python3 -c "
 import json,sys
 data=json.load(sys.stdin)
 for ual,props in data.items():
-    if props.get('collection')=='reading-queue':
+    if props.get('collection')=='research-briefs':
         print(ual); break
 " 2>/dev/null || echo "")
 
-if [ -n "$CLEO_UAL" ]; then
-  info "Found Cleo's asset: $CLEO_UAL"
+if [ -n "$FIRST_UAL" ]; then
+  info "Found prior asset: $FIRST_UAL"
   python3 scripts/research-to-dkg.py \
     --title "Multi-Agent Memory Patterns on DKG v10" \
     --source-url "https://docs.origintrail.io/dkg-v10" \
@@ -61,14 +61,12 @@ if [ -n "$CLEO_UAL" ]; then
                "No on-chain registration needed for MVP" \
                "Cross-references create provenance chain" \
     --verdict adopt \
-    --based-on "$CLEO_UAL" \
     --json 2>/dev/null | python3 -c "
 import json,sys; d=json.load(sys.stdin)
 print(f'  ✅ Otto brief:   {d[\"ual\"]}')
-print(f'     Based on:     {d[\"based_on\"]}')
 "
 else
-  step "No Cleo assets in WM — Otto writes standalone brief"
+  step "No prior assets — Otto writes standalone brief"
   python3 scripts/research-to-dkg.py \
     --title "Multi-Agent Memory Patterns on DKG v10" \
     --source-url "https://docs.origintrail.io/dkg-v10" \
